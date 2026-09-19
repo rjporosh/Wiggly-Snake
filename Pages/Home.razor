@@ -1,0 +1,421 @@
+@page "/"
+@implements IDisposable
+@inject IJSRuntime JS
+
+<PageTitle>Wiggly Snake 🐍</PageTitle>
+
+<div class="game-shell">
+    <header class="game-header">
+        <h1 class="game-title">
+            <span class="title-emoji" aria-hidden="true">🐍</span>
+            Wiggly Snake
+        </h1>
+        <div class="scoreboard">
+            <div class="score-card">
+                <span class="score-label">Score</span>
+                <span class="score-value">@Score</span>
+            </div>
+            <div class="score-card best">
+                <span class="score-label">Best</span>
+                <span class="score-value">@HighScore</span>
+            </div>
+            <button class="icon-btn" @onclick="ToggleMute" aria-label="@(Muted ? "Unmute sounds" : "Mute sounds")">
+                @(Muted ? "🔇" : "🔊")
+            </button>
+        </div>
+    </header>
+
+    <div class="board-wrap">
+        <div class="board"
+             tabindex="0"
+             style="--cols:@Cols; --rows:@Rows;"
+             @onkeydown="OnKeyDown"
+             @onkeydown:preventDefault="IsArrowKey"
+             @ontouchstart="OnTouchStart"
+             @ontouchend="OnTouchEnd"
+             @ontouchmove:preventDefault="true"
+             @ref="_boardRef">
+
+            @for (int y = 0; y < Rows; y++)
+            {
+                for (int x = 0; x < Cols; x++)
+                {
+                    var kind = CellKind(x, y);
+                    <div class="cell @kind.Css" style="@kind.Style">
+                        @if (kind.IsFood)
+                        {
+                            <span class="fruit" aria-hidden="true">@FoodEmoji</span>
+                        }
+                        else if (kind.IsHead)
+                        {
+                            <span class="eyes @HeadDirClass" aria-hidden="true"></span>
+                        }
+                    </div>
+                }
+            }
+
+            @if (State == GameState.Ready)
+            {
+                <div class="overlay">
+                    <div class="overlay-card">
+                        <div class="overlay-emoji">🐍🍎</div>
+                        <h2>Wiggly Snake</h2>
+                        <p>Guide the snake to munch yummy fruit and grow super long!</p>
+                        <p class="hint">Swipe on the board, use the arrows below, or your keyboard.</p>
+                        <button class="play-btn" @onclick="StartGame">▶ Play</button>
+                    </div>
+                </div>
+            }
+            else if (State == GameState.Paused)
+            {
+                <div class="overlay">
+                    <div class="overlay-card">
+                        <div class="overlay-emoji">⏸️</div>
+                        <h2>Paused</h2>
+                        <button class="play-btn" @onclick="Resume">▶ Resume</button>
+                    </div>
+                </div>
+            }
+            else if (State == GameState.GameOver)
+            {
+                <div class="overlay">
+                    <div class="overlay-card">
+                        <div class="overlay-emoji">@(NewBest ? "🏆" : "💥")</div>
+                        <h2>@(NewBest ? "New Best!" : "Game Over")</h2>
+                        <p>You scored <strong>@Score</strong> @(Score == 1 ? "fruit" : "fruits")!</p>
+                        <button class="play-btn" @onclick="StartGame">↻ Play Again</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="dpad">
+            <button class="dpad-btn up" @onclick='() => SetDirection(Dir.Up)' aria-label="Move up">▲</button>
+            <button class="dpad-btn left" @onclick='() => SetDirection(Dir.Left)' aria-label="Move left">◀</button>
+            <button class="dpad-btn pause" @onclick="TogglePause" aria-label="Pause or resume">
+                @(State == GameState.Playing ? "❚❚" : "▶")
+            </button>
+            <button class="dpad-btn right" @onclick='() => SetDirection(Dir.Right)' aria-label="Move right">▶</button>
+            <button class="dpad-btn down" @onclick='() => SetDirection(Dir.Down)' aria-label="Move down">▼</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    enum GameState { Ready, Playing, Paused, GameOver }
+    enum Dir { Up, Down, Left, Right }
+
+    record struct Point(int X, int Y);
+
+    const int Cols = 17;
+    const int Rows = 17;
+    const int BaseSpeedMs = 170;
+    const int MinSpeedMs = 80;
+
+    readonly List<Point> _snake = new();
+    Point _food;
+    Dir _dir = Dir.Right;
+    Dir _pendingDir = Dir.Right;
+    bool _dirLocked; // prevents two turns inside one tick
+
+    GameState State = GameState.Ready;
+    int Score;
+    int HighScore;
+    bool NewBest;
+    bool Muted;
+
+    string FoodEmoji = "🍎";
+    static readonly string[] Fruits = { "🍎", "🍓", "🍇", "🍊", "🍒", "🍑", "🍉", "🥝", "🍍" };
+    readonly Random _rng = new();
+
+    ElementReference _boardRef;
+    CancellationTokenSource? _loopCts;
+
+    double _touchStartX, _touchStartY;
+
+    string HeadDirClass => _dir switch
+    {
+        Dir.Up => "look-up",
+        Dir.Down => "look-down",
+        Dir.Left => "look-left",
+        _ => "look-right"
+    };
+
+    bool IsArrowKey { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var stored = await JS.InvokeAsync<string>("localStorage.getItem", "wigglySnakeHigh");
+        if (int.TryParse(stored, out var hs)) HighScore = hs;
+    }
+
+    void ResetBoard()
+    {
+        _snake.Clear();
+        int cx = Cols / 2, cy = Rows / 2;
+        // Head first, then body to the left.
+        _snake.Add(new Point(cx, cy));
+        _snake.Add(new Point(cx - 1, cy));
+        _snake.Add(new Point(cx - 2, cy));
+        _dir = _pendingDir = Dir.Right;
+        _dirLocked = false;
+        Score = 0;
+        NewBest = false;
+        PlaceFood();
+    }
+
+    async void StartGame()
+    {
+        StopLoop();
+        ResetBoard();
+        State = GameState.Playing;
+        await JS.InvokeVoidAsync("snakeAudio.unlock");
+        await JS.InvokeVoidAsync("snakeAudio.start");
+        await FocusBoard();
+        StartLoop();
+        StateHasChanged();
+    }
+
+    void StartLoop()
+    {
+        _loopCts = new CancellationTokenSource();
+        _ = GameLoop(_loopCts.Token);
+    }
+
+    void StopLoop()
+    {
+        _loopCts?.Cancel();
+        _loopCts?.Dispose();
+        _loopCts = null;
+    }
+
+    async Task GameLoop(CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                await Task.Delay(CurrentSpeed(), token);
+                if (token.IsCancellationRequested) break;
+                if (State == GameState.Playing)
+                {
+                    Tick();
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (TaskCanceledException) { /* loop stopped */ }
+    }
+
+    int CurrentSpeed()
+    {
+        int speed = BaseSpeedMs - Score * 5;
+        return Math.Max(MinSpeedMs, speed);
+    }
+
+    void Tick()
+    {
+        // Apply the queued direction once per tick.
+        _dir = _pendingDir;
+        _dirLocked = false;
+
+        var head = _snake[0];
+        var next = _dir switch
+        {
+            Dir.Up => new Point(head.X, head.Y - 1),
+            Dir.Down => new Point(head.X, head.Y + 1),
+            Dir.Left => new Point(head.X - 1, head.Y),
+            _ => new Point(head.X + 1, head.Y)
+        };
+
+        // Wall collision.
+        if (next.X < 0 || next.X >= Cols || next.Y < 0 || next.Y >= Rows)
+        {
+            EndGame();
+            return;
+        }
+
+        // Self collision (ignore the tail cell that is about to move away).
+        bool eating = next.Equals(_food);
+        int checkCount = eating ? _snake.Count : _snake.Count - 1;
+        for (int i = 0; i < checkCount; i++)
+        {
+            if (_snake[i].Equals(next))
+            {
+                EndGame();
+                return;
+            }
+        }
+
+        _snake.Insert(0, next);
+
+        if (eating)
+        {
+            Score++;
+            _ = JS.InvokeVoidAsync("snakeAudio.eat");
+            PlaceFood();
+        }
+        else
+        {
+            _snake.RemoveAt(_snake.Count - 1);
+        }
+    }
+
+    void EndGame()
+    {
+        State = GameState.GameOver;
+        StopLoop();
+        if (Score > HighScore)
+        {
+            HighScore = Score;
+            NewBest = true;
+            _ = JS.InvokeVoidAsync("localStorage.setItem", "wigglySnakeHigh", HighScore.ToString());
+        }
+        _ = JS.InvokeVoidAsync("snakeAudio.die");
+    }
+
+    void PlaceFood()
+    {
+        // Collect empty cells and pick one at random.
+        var occupied = new HashSet<Point>(_snake);
+        var free = new List<Point>();
+        for (int y = 0; y < Rows; y++)
+            for (int x = 0; x < Cols; x++)
+            {
+                var p = new Point(x, y);
+                if (!occupied.Contains(p)) free.Add(p);
+            }
+
+        if (free.Count == 0)
+        {
+            // Board is full — you win! Treat as game over celebration.
+            EndGame();
+            return;
+        }
+
+        _food = free[_rng.Next(free.Count)];
+        FoodEmoji = Fruits[_rng.Next(Fruits.Length)];
+    }
+
+    void SetDirection(Dir d)
+    {
+        if (State == GameState.Ready)
+        {
+            StartGame();
+            return;
+        }
+        if (State != GameState.Playing || _dirLocked) return;
+
+        // Can't reverse straight back onto yourself.
+        bool opposite =
+            (d == Dir.Up && _dir == Dir.Down) ||
+            (d == Dir.Down && _dir == Dir.Up) ||
+            (d == Dir.Left && _dir == Dir.Right) ||
+            (d == Dir.Right && _dir == Dir.Left);
+
+        if (opposite) return;
+
+        _pendingDir = d;
+        _dirLocked = true;
+    }
+
+    void OnKeyDown(KeyboardEventArgs e)
+    {
+        IsArrowKey = e.Key is "ArrowUp" or "ArrowDown" or "ArrowLeft" or "ArrowRight";
+        switch (e.Key)
+        {
+            case "ArrowUp": case "w": case "W": SetDirection(Dir.Up); break;
+            case "ArrowDown": case "s": case "S": SetDirection(Dir.Down); break;
+            case "ArrowLeft": case "a": case "A": SetDirection(Dir.Left); break;
+            case "ArrowRight": case "d": case "D": SetDirection(Dir.Right); break;
+            case " ": case "p": case "P": TogglePause(); break;
+            case "Enter":
+                if (State != GameState.Playing) StartGame();
+                break;
+        }
+    }
+
+    void OnTouchStart(TouchEventArgs e)
+    {
+        if (e.Touches.Length > 0)
+        {
+            _touchStartX = e.Touches[0].ClientX;
+            _touchStartY = e.Touches[0].ClientY;
+        }
+    }
+
+    void OnTouchEnd(TouchEventArgs e)
+    {
+        if (e.ChangedTouches.Length == 0) return;
+        var dx = e.ChangedTouches[0].ClientX - _touchStartX;
+        var dy = e.ChangedTouches[0].ClientY - _touchStartY;
+
+        const double threshold = 24;
+        if (Math.Abs(dx) < threshold && Math.Abs(dy) < threshold)
+        {
+            // A tap starts the game or resumes.
+            if (State != GameState.Playing) StartGame();
+            return;
+        }
+
+        if (Math.Abs(dx) > Math.Abs(dy))
+            SetDirection(dx > 0 ? Dir.Right : Dir.Left);
+        else
+            SetDirection(dy > 0 ? Dir.Down : Dir.Up);
+    }
+
+    void TogglePause()
+    {
+        if (State == GameState.Playing) State = GameState.Paused;
+        else if (State == GameState.Paused) Resume();
+    }
+
+    async void Resume()
+    {
+        if (State == GameState.Paused)
+        {
+            State = GameState.Playing;
+            await FocusBoard();
+            StateHasChanged();
+        }
+    }
+
+    void ToggleMute()
+    {
+        Muted = !Muted;
+        _ = JS.InvokeVoidAsync("snakeAudio.setMuted", Muted);
+    }
+
+    async Task FocusBoard()
+    {
+        try { await _boardRef.FocusAsync(); } catch { /* ignore */ }
+    }
+
+    (string Css, string Style, bool IsFood, bool IsHead) CellKind(int x, int y)
+    {
+        var p = new Point(x, y);
+
+        if (_food.Equals(p) && State != GameState.Ready)
+            return ("food", "", true, false);
+
+        int idx = _snake.FindIndex(s => s.Equals(p));
+        if (idx == 0)
+            return ("snake head", "", false, true);
+        if (idx > 0)
+        {
+            // Gentle gradient along the body so it looks lively.
+            double t = _snake.Count <= 1 ? 0 : (double)idx / _snake.Count;
+            int hue = 140 - (int)(t * 40); // green -> teal-ish
+            var style = $"background:hsl({hue}, 70%, {55 - (int)(t * 12)}%);";
+            return ("snake body", style, false, false);
+        }
+
+        // Checkerboard empty cell.
+        bool light = (x + y) % 2 == 0;
+        return (light ? "empty light" : "empty dark", "", false, false);
+    }
+
+    public void Dispose() => StopLoop();
+}

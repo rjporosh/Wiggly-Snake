@@ -13,3 +13,17 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
+# .NET MAUI (SnakeGame.Maui) build output — publish artifacts are produced
+# locally/in CI, not committed. The existing Blazor project's own bin/obj
+# tracking above is left exactly as it was.
+SnakeGame.Maui/bin/
+SnakeGame.Maui/obj/
+*.ap_
+*.apk
+*.aab
+*.ipa
+*.dmg
+*.pkg
+*.msix
+*.msixbundle
+*.appxupload

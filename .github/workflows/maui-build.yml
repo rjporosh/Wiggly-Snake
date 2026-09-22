@@ -1,0 +1,54 @@
+name: Build MAUI app (Android / iOS / Mac Catalyst / Windows)
+
+on:
+  push:
+    branches: [ app ]
+  pull_request:
+    branches: [ app ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  PROJECT: SnakeGame.Maui/SnakeGame.Maui.csproj
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet workload install maui-android
+      - run: dotnet publish ${{ env.PROJECT }} -f net10.0-android -c Release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: SnakeGame.Maui/bin/Release/net10.0-android/publish/*.apk
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet workload install maui-windows
+      - run: dotnet publish ${{ env.PROJECT }} -f net10.0-windows10.0.19041.0 -c Release -r win10-x64 --self-contained
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe
+          path: SnakeGame.Maui/bin/Release/net10.0-windows10.0.19041.0/win10-x64/publish/
+
+  ios-and-maccatalyst:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - run: dotnet workload install maui-ios maui-maccatalyst
+      # Unsigned archive builds — add signing secrets to produce installable
+      # .ipa/.pkg output (see BUILD-GUIDE.md §5).
+      - run: dotnet build ${{ env.PROJECT }} -f net10.0-ios -c Release -p:BuildIpa=false
+      - run: dotnet build ${{ env.PROJECT }} -f net10.0-maccatalyst -c Release

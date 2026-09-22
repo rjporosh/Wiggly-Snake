@@ -19,7 +19,7 @@
           RowDefinitions="Auto,*,Auto"
           RowSpacing="16">
 
-        <!-- ---------- Header ---------- -->
+        <!-- Header -->
         <VerticalStackLayout Grid.Row="0" Spacing="12">
 
             <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
@@ -76,7 +76,7 @@
             </HorizontalStackLayout>
         </VerticalStackLayout>
 
-        <!-- ---------- Board + overlay ---------- -->
+        <!-- Board + overlay -->
         <Grid Grid.Row="1" Padding="0,4">
 
             <controls:GameBoardView x:Name="Board">
@@ -139,7 +139,7 @@
             </Grid>
         </Grid>
 
-        <!-- ---------- D-pad controls ---------- -->
+        <!-- D-pad controls -->
         <Grid Grid.Row="2"
               HorizontalOptions="Center"
               ColumnDefinitions="64,64,64"

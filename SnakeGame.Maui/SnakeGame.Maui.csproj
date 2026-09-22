@@ -42,6 +42,10 @@
     <Description>A colorful, kid-friendly Snake game — native port of Wiggly Snake for phone, tablet, TV and desktop.</Description>
   </PropertyGroup>
 
+  <PropertyGroup Condition="$(TargetFramework.Contains('-maccatalyst'))">
+    <CodesignEntitlements>Platforms\MacCatalyst\Entitlements.plist</CodesignEntitlements>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- App Icon -->
     <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#6A11CB" />
@@ -51,7 +55,6 @@
 
     <!-- Images -->
     <MauiImage Include="Resources\Images\*" />
-    <MauiImage Update="Resources\Images\dotnet_bot.svg" Resize="True" BaseSize="168,208" />
 
     <!-- Custom Fonts -->
     <MauiFont Include="Resources\Fonts\*" />

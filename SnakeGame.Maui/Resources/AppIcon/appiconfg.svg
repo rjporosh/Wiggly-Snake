@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="snakefg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D3FF9C" />
+      <stop offset="1" stop-color="#5FCB3E" />
+    </linearGradient>
+  </defs>
+
+  <path d="M 340 680
+           C 270 680 255 600 305 566
+           C 366 528 442 566 450 500
+           C 458 434 384 418 360 368
+           C 336 318 378 262 446 262
+           C 530 262 564 336 548 402
+           C 533 462 464 468 474 534
+           C 486 610 616 602 650 680
+           C 684 758 616 806 550 782"
+        fill="none" stroke="url(#snakefg)" stroke-width="72" stroke-linecap="round" />
+
+  <circle cx="550" cy="782" r="54" fill="url(#snakefg)" />
+  <circle cx="530" cy="765" r="9" fill="#16233F" />
+  <circle cx="568" cy="768" r="9" fill="#16233F" />
+
+  <circle cx="700" cy="330" r="68" fill="#FF5D8F" />
+  <path d="M 700 264 C 700 232 732 224 742 240" fill="none" stroke="#5FCB3E" stroke-width="14" stroke-linecap="round" />
+</svg>

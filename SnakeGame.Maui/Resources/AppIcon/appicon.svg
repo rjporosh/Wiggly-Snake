@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#6A11CB" />
+      <stop offset="0.55" stop-color="#2575FC" />
+      <stop offset="1" stop-color="#FF6FD8" />
+    </linearGradient>
+    <linearGradient id="snake" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D3FF9C" />
+      <stop offset="1" stop-color="#5FCB3E" />
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="220" fill="url(#bg)" />
+
+  <!-- coiled snake body -->
+  <path d="M 300 700
+           C 220 700 200 600 260 560
+           C 330 512 420 560 430 480
+           C 440 400 350 380 320 320
+           C 290 260 340 190 420 190
+           C 520 190 560 280 540 360
+           C 522 432 440 440 452 520
+           C 466 610 620 600 660 700
+           C 700 800 620 860 540 830"
+        fill="none" stroke="url(#snake)" stroke-width="92" stroke-linecap="round" />
+
+  <!-- head -->
+  <circle cx="540" cy="830" r="70" fill="url(#snake)" />
+  <circle cx="516" cy="808" r="12" fill="#16233F" />
+  <circle cx="562" cy="812" r="12" fill="#16233F" />
+
+  <!-- apple -->
+  <circle cx="760" cy="330" r="86" fill="#FF5D8F" />
+  <path d="M 760 250 C 760 210 800 200 812 220" fill="none" stroke="#5FCB3E" stroke-width="18" stroke-linecap="round" />
+</svg>

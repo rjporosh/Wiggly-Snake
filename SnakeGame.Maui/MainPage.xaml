@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:WigglySnake.Controls"
+             x:Class="WigglySnake.MainPage"
+             Background="{StaticResource AppBackgroundBrush}"
+             Shell.NavBarIsVisible="False">
+
+    <!-- Everything is capped at 560 effective-pixels wide, exactly like the
+         web version's .game-shell { max-width: 520px }, so phone, tablet,
+         desktop and TV all show the same composition, just at different
+         physical sizes. The whole column re-centers itself automatically
+         when the device rotates between portrait and landscape. -->
+    <Grid MaximumWidthRequest="560"
+          MaximumHeightRequest="920"
+          HorizontalOptions="Center"
+          VerticalOptions="Center"
+          Padding="16,20"
+          RowDefinitions="Auto,*,Auto"
+          RowSpacing="16">
+
+        <!-- ---------- Header ---------- -->
+        <VerticalStackLayout Grid.Row="0" Spacing="12">
+
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+                <Label x:Name="TitleEmoji"
+                       Text="🐍"
+                       FontSize="34"
+                       AnchorX="0.5" AnchorY="0.5" />
+                <Label Text="Wiggly Snake"
+                       FontSize="30"
+                       FontAttributes="Bold"
+                       TextColor="White"
+                       VerticalOptions="Center" />
+            </HorizontalStackLayout>
+
+            <HorizontalStackLayout HorizontalOptions="Center" Spacing="10">
+
+                <Border StrokeShape="RoundRectangle 16"
+                        Stroke="#40FFFFFF"
+                        StrokeThickness="2"
+                        BackgroundColor="{StaticResource Panel}"
+                        Padding="18,6"
+                        MinimumWidthRequest="74">
+                    <VerticalStackLayout>
+                        <Label Text="SCORE" Style="{StaticResource ScoreLabelStyle}" />
+                        <Label x:Name="ScoreLabel" Text="0" Style="{StaticResource ScoreValueStyle}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border StrokeShape="RoundRectangle 16"
+                        Stroke="#80FFFFFF"
+                        StrokeThickness="2"
+                        Background="{StaticResource BestCardBrush}"
+                        Padding="18,6"
+                        MinimumWidthRequest="74">
+                    <VerticalStackLayout>
+                        <Label Text="BEST" Style="{StaticResource ScoreLabelStyle}" />
+                        <Label x:Name="HighScoreLabel" Text="0" Style="{StaticResource ScoreValueStyle}" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Button x:Name="MuteButton"
+                        Text="🔊"
+                        FontSize="18"
+                        WidthRequest="48"
+                        HeightRequest="48"
+                        Padding="0"
+                        CornerRadius="14"
+                        BackgroundColor="{StaticResource Panel}"
+                        BorderColor="#40FFFFFF"
+                        BorderWidth="2"
+                        Clicked="OnMuteClicked"
+                        SemanticProperties.Hint="Mute or unmute sounds" />
+
+            </HorizontalStackLayout>
+        </VerticalStackLayout>
+
+        <!-- ---------- Board + overlay ---------- -->
+        <Grid Grid.Row="1" Padding="0,4">
+
+            <controls:GameBoardView x:Name="Board">
+                <controls:GameBoardView.GestureRecognizers>
+                    <SwipeGestureRecognizer Direction="Left" Swiped="OnSwiped" />
+                    <SwipeGestureRecognizer Direction="Right" Swiped="OnSwiped" />
+                    <SwipeGestureRecognizer Direction="Up" Swiped="OnSwiped" />
+                    <SwipeGestureRecognizer Direction="Down" Swiped="OnSwiped" />
+                    <TapGestureRecognizer Tapped="OnBoardTapped" />
+                </controls:GameBoardView.GestureRecognizers>
+            </controls:GameBoardView>
+
+            <!-- Overlay: Ready / Paused / Game Over card, layered on top of
+                 the board exactly like the web version's .overlay div. -->
+            <Grid x:Name="OverlayPanel"
+                  BackgroundColor="#8C0C1428"
+                  IsVisible="True">
+
+                <Border StrokeShape="RoundRectangle 24"
+                        BackgroundColor="{StaticResource PanelSolid}"
+                        Padding="26,22"
+                        MaximumWidthRequest="320"
+                        HorizontalOptions="Center"
+                        VerticalOptions="Center">
+                    <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
+                        <Label x:Name="OverlayEmoji"
+                               Text="🐍🍎"
+                               FontSize="42"
+                               HorizontalOptions="Center" />
+                        <Label x:Name="OverlayTitle"
+                               Text="Wiggly Snake"
+                               FontSize="24"
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource Bg1}"
+                               HorizontalOptions="Center" />
+                        <Label x:Name="OverlayMessage"
+                               Text="Guide the snake to munch yummy fruit and grow super long!"
+                               FontSize="15"
+                               TextColor="{StaticResource Ink}"
+                               HorizontalTextAlignment="Center" />
+                        <Label x:Name="OverlayHint"
+                               Text="Swipe on the board, use the arrows below, your keyboard, or a controller."
+                               FontSize="12"
+                               Opacity="0.7"
+                               TextColor="{StaticResource Ink}"
+                               HorizontalTextAlignment="Center" />
+                        <Button x:Name="PrimaryActionButton"
+                                Text="▶ Play"
+                                FontAttributes="Bold"
+                                FontSize="17"
+                                TextColor="White"
+                                Background="{StaticResource PlayButtonBrush}"
+                                CornerRadius="24"
+                                Padding="30,12"
+                                Margin="0,10,0,0"
+                                HorizontalOptions="Center"
+                                Clicked="OnPrimaryActionClicked" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+        </Grid>
+
+        <!-- ---------- D-pad controls ---------- -->
+        <Grid Grid.Row="2"
+              HorizontalOptions="Center"
+              ColumnDefinitions="64,64,64"
+              RowDefinitions="64,64,64"
+              ColumnSpacing="8"
+              RowSpacing="8">
+
+            <Button Grid.Row="0" Grid.Column="1" Text="▲" Style="{StaticResource DPadButtonStyle}"
+                    Clicked="OnUpClicked" SemanticProperties.Hint="Move up" />
+            <Button Grid.Row="1" Grid.Column="0" Text="◀" Style="{StaticResource DPadButtonStyle}"
+                    Clicked="OnLeftClicked" SemanticProperties.Hint="Move left" />
+            <Button x:Name="PauseButton"
+                    Grid.Row="1" Grid.Column="1" Text="❚❚"
+                    Style="{StaticResource DPadButtonStyle}"
+                    Background="{StaticResource PauseButtonBrush}"
+                    TextColor="{StaticResource Ink}"
+                    Clicked="OnPauseClicked" SemanticProperties.Hint="Pause or resume" />
+            <Button Grid.Row="1" Grid.Column="2" Text="▶" Style="{StaticResource DPadButtonStyle}"
+                    Clicked="OnRightClicked" SemanticProperties.Hint="Move right" />
+            <Button Grid.Row="2" Grid.Column="1" Text="▼" Style="{StaticResource DPadButtonStyle}"
+                    Clicked="OnDownClicked" SemanticProperties.Hint="Move down" />
+        </Grid>
+
+    </Grid>
+</ContentPage>

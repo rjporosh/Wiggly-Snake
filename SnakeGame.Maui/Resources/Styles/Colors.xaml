@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  Palette copied 1:1 from wwwroot/css/app.css (:root custom properties) so the
+  native app matches the original Blazor design exactly.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
+
+    <Color x:Key="Bg1">#6A11CB</Color>
+    <Color x:Key="Bg2">#2575FC</Color>
+    <Color x:Key="Bg3">#FF6FD8</Color>
+    <Color x:Key="BoardBg">#142A4C</Color>
+    <Color x:Key="Panel">#26FFFFFF</Color>
+    <!-- rgba(255,255,255,0.14) -->
+    <Color x:Key="PanelSolid">#FFFFFF</Color>
+    <Color x:Key="Ink">#1B2440</Color>
+    <Color x:Key="Accent">#FFD23F</Color>
+    <Color x:Key="Accent2">#FF5D8F</Color>
+    <Color x:Key="SnakeHead">#A8FF60</Color>
+    <Color x:Key="CardShadow">#59000000</Color>
+
+    <LinearGradientBrush x:Key="AppBackgroundBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Bg1}" Offset="0.0" />
+        <GradientStop Color="{StaticResource Bg2}" Offset="0.55" />
+        <GradientStop Color="{StaticResource Bg3}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="BestCardBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Accent}" Offset="0.0" />
+        <GradientStop Color="{StaticResource Accent2}" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PlayButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Accent2}" Offset="0.0" />
+        <GradientStop Color="#FF9A5A" Offset="1.0" />
+    </LinearGradientBrush>
+
+    <LinearGradientBrush x:Key="PauseButtonBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Accent}" Offset="0.0" />
+        <GradientStop Color="#FFB347" Offset="1.0" />
+    </LinearGradientBrush>
+
+</ResourceDictionary>
